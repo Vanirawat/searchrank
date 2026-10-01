@@ -1,5 +1,5 @@
 """
-clean.py - Raw products CSV ko saaf karta hai.
+clean.py - Clean the raw products CSV.
 """
 import re
 
@@ -18,24 +18,24 @@ def clean_title(text: str) -> str:
 def clean_products(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    # Zaroori columns na hon toh row hata do
+    # Drop rows missing essential columns
     df = df.dropna(subset=["title", "price"])
 
-    # Numbers ko sahi type mein lao
+    # Convert numeric columns to proper types
     for col in ["price", "rating", "reviews"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     df = df.dropna(subset=["price"])
     df = df[df["price"] > 0]
 
-    # Missing rating/reviews = 0, aur flag rakho
+    # Missing rating/reviews = 0, and keep a flag
     df["has_rating"] = df["rating"].notna().astype(int)
     df["rating"] = df["rating"].fillna(0)
     df["reviews"] = df["reviews"].fillna(0)
 
-    # Duplicates hatao
+    # Remove duplicates
     df = df.drop_duplicates(subset=["query", "title", "seller"])
 
-    # NLP ke liye saaf title
+    # Clean title for NLP
     df["title_clean"] = df["title"].apply(clean_title)
 
     return df.reset_index(drop=True)
@@ -47,6 +47,6 @@ if __name__ == "__main__":
     clean.to_csv(CLEAN_CSV, index=False)
 
     print(f"Raw rows: {len(raw)} -> Clean rows: {len(clean)}")
-    print(f"Rating wale products: {clean['has_rating'].sum()}")
+    print(f"Products with a rating: {clean['has_rating'].sum()}")
     print("\nPrice summary:")
     print(clean["price"].describe().round(1))

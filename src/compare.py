@@ -1,5 +1,5 @@
 """
-compare.py - Same product ki alag-alag sellers ki listings ko group karke price compare karna.
+compare.py - Group listings of the same product from different sellers and compare prices.
 """
 import sys
 
@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 def group_products(df: pd.DataFrame, threshold: float = 0.5) -> pd.DataFrame:
-    """Milte-julte titles ko ek group_id deta hai (title similarity se)."""
+    """Assign a group_id to similar titles (based on title similarity)."""
     df = df.reset_index(drop=True).copy()
     if df.empty:
         df["group_id"] = []
@@ -18,7 +18,7 @@ def group_products(df: pd.DataFrame, threshold: float = 0.5) -> pd.DataFrame:
     matrix = TfidfVectorizer(stop_words="english").fit_transform(df["title_clean"])
     sims = cosine_similarity(matrix)
 
-    group, reps = [], []          # reps = har group ka pehla (sabse upar rank wala) product
+    group, reps = [], []          # reps = first (highest ranked) product of each group
     for i in range(len(df)):
         for g, r in enumerate(reps):
             if sims[i, r] >= threshold:
@@ -34,7 +34,7 @@ def group_products(df: pd.DataFrame, threshold: float = 0.5) -> pd.DataFrame:
 
 def price_comparison(ranked: pd.DataFrame, threshold: float = 0.5,
                      top_n: int = 30, min_offers: int = 1) -> pd.DataFrame:
-    """Ranked products ko group karke har product ka price summary banata hai."""
+    """Group ranked products and build a price summary for each product."""
     g = group_products(ranked.head(top_n), threshold)
     rows = []
     for _, grp in g.groupby("group_id", sort=False):

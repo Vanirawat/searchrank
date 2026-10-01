@@ -1,6 +1,6 @@
 """
-pipeline.py - Koi bhi query: fetch -> clean -> save -> rank -> picks -> price comparison.
-UI (Streamlit) isi ko call karega.
+pipeline.py - Any query: fetch -> clean -> save -> rank -> picks -> price comparison.
+The Streamlit UI calls this.
 """
 import sys
 from pathlib import Path
@@ -18,8 +18,8 @@ from src.ranking import rank_products
 
 def run_search(query: str, use_ml: bool = True, refresh: bool = False) -> dict:
     """
-    Naya query hua toh SerpApi se live data aayega (1 free search lagegi).
-    Purana query hua toh cache se aayega (API call nahi).
+    New query: live data from SerpApi (uses 1 of your searches).
+    Previously searched query: loaded from cache (no API call).
     """
     query = " ".join(query.lower().split())
     raw = fetch_products(query, use_cache=not refresh)
@@ -53,6 +53,6 @@ if __name__ == "__main__":
     for label, row in out["picks"].items():
         print(f"{label}: {row['title'][:60]} | Rs {row['price']} | rating {row['rating']}")
 
-    print("\n=== Price comparison (jahan 2+ sellers hain) ===")
+    print("\n=== Price comparison (products with 2+ sellers) ===")
     cmp_df = out["comparison"]
     print(cmp_df[cmp_df["offers"] >= 2][["product", "offers", "lowest_price", "highest_price", "you_save"]].to_string())

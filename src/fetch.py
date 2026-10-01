@@ -1,5 +1,5 @@
 """
-fetch.py - SerpApi (Google Shopping) se live product data lana.
+fetch.py - Fetch live product data from SerpApi (Google Shopping).
 """
 import os
 import re
@@ -19,14 +19,14 @@ RAW_DIR = Path("data/raw")
 
 
 def _cache_path(query: str) -> Path:
-    """'running shoes' -> data/raw/running_shoes.json"""
+    """Turn a query into a file name, e.g. 'running shoes' -> running_shoes.json"""
     slug = re.sub(r"[^a-z0-9]+", "_", query.strip().lower()).strip("_")
     return RAW_DIR / f"{slug}.json"
 
 
 def _call_api(query: str) -> dict:
     if not API_KEY:
-        raise RuntimeError("SERPAPI_KEY nahi mili. .env file check karo.")
+        raise RuntimeError("SERPAPI_KEY not found. Check your .env file.")
 
     params = {
         "engine": "google_shopping",
@@ -47,19 +47,19 @@ def _call_api(query: str) -> dict:
 
 def fetch_products(query: str, use_cache: bool = True) -> pd.DataFrame:
     """
-    Query ke products fetch karke DataFrame return karta hai.
-    use_cache=True: pehle se saved response use hota hai (API call bachti hai).
+    Fetch products for a query and return them as a DataFrame.
+    If use_cache is True, a previously saved response is reused (saves an API search).
     """
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     cache_file = _cache_path(query)
 
     if use_cache and cache_file.exists():
         data = json.loads(cache_file.read_text(encoding="utf-8"))
-        print(f"[cache] '{query}' ka data file se liya")
+        print(f"[cache] Loaded '{query}' from saved file")
     else:
         data = _call_api(query)
         cache_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"[api] '{query}' ka data SerpApi se aaya aur save hua")
+        print(f"[api] Fetched '{query}' from SerpApi and saved it")
 
     rows = []
     for item in data.get("shopping_results", []):

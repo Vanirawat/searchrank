@@ -1,5 +1,5 @@
 """
-similarity.py - TF-IDF + cosine similarity se query-product relevance score.
+similarity.py - Query-product relevance score using TF-IDF + cosine similarity.
 """
 import sys
 
@@ -12,14 +12,14 @@ from src.db import load_products
 
 
 def add_similarity(df: pd.DataFrame, query: str) -> pd.DataFrame:
-    """df mein 'similarity' column jodta hai aur usi hisaab se sort karta hai."""
+    """Add a 'similarity' column (0 to 1) and sort by it."""
     df = df.copy()
     q = clean_title(query)
 
     vectorizer = TfidfVectorizer(ngram_range=(1, 2), stop_words="english")
     matrix = vectorizer.fit_transform(df["title_clean"].tolist() + [q])
 
-    # Aakhri row query hai, baaki sab products
+    # Last row is the query, the rest are products
     scores = cosine_similarity(matrix[-1], matrix[:-1]).flatten()
     df["similarity"] = scores.round(4)
 
@@ -29,20 +29,20 @@ def add_similarity(df: pd.DataFrame, query: str) -> pd.DataFrame:
 if __name__ == "__main__":
     q = " ".join(sys.argv[1:]) or "running shoes"
 
-    # Test 1: sirf us query ke products
+    # Test 1: only products of this query
     own = load_products(query=q)
     if own.empty:
-        print(f"'{q}' ka data database mein nahi hai. collect_data ki QUERIES mein hona chahiye.")
+        print(f"No data for '{q}' in the database. It must be in QUERIES in collect_data.py.")
         sys.exit()
 
-    print(f"--- '{q}' ke products, similarity ke hisaab se ---")
+    print(f"--- Products for '{q}', sorted by similarity ---")
     res = add_similarity(own, q)
     print(res[["title", "price", "similarity"]].head(10).to_string())
 
-    # Test 2: saare products mein dhundo (galat category wale kitne upar aate hain?)
+    # Test 2: search across the whole dataset (do wrong-category products rank high?)
     allp = load_products()
     res_all = add_similarity(allp, q)
     top = res_all.head(15)
-    print(f"\n--- Poore dataset mein top 15 (query: {q}) ---")
+    print(f"\n--- Top 15 across the whole dataset (query: {q}) ---")
     print(top[["query", "title", "similarity"]].to_string())
-    print(f"\nTop 15 mein sahi category ke: {(top['query'] == q).sum()}/15")
+    print(f"\nCorrect category in top 15: {(top['query'] == q).sum()}/15")

@@ -13,7 +13,7 @@ def get_picks(ranked: pd.DataFrame, min_reviews: int = 10) -> dict:
     if ranked.empty:
         return {}
 
-    # Highest Rated: pehle woh jinke kam se kam min_reviews hon (1 review wala 5.0 fake hota hai)
+    # Highest Rated: only products with at least min_reviews (a 5.0 from 1 review is unreliable)
     pool = ranked[ranked["reviews"] >= min_reviews]
     if pool.empty:
         pool = ranked[ranked["has_rating"] == 1]
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     q = " ".join(sys.argv[1:]) or "running shoes"
     data = load_products(query=q)
     if data.empty:
-        print(f"'{q}' ka data database mein nahi hai.")
+        print(f"No data for '{q}' in the database.")
         sys.exit()
 
     ranked = rank_products(data, q)

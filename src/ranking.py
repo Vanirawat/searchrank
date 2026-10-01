@@ -1,8 +1,8 @@
 """
-ranking.py - Weighted score se products ko rank karna.
+ranking.py - Rank products with a weighted score.
 
 score = 0.40*similarity + 0.25*rating + 0.20*reviews + 0.15*price
-(price jitna kam, utna accha score)
+(the lower the price, the better the score)
 """
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ WEIGHTS = {"similarity": 0.40, "rating": 0.25, "reviews": 0.20, "price": 0.15}
 
 
 def _minmax(s: pd.Series) -> pd.Series:
-    """Values ko 0-1 range mein laata hai. Sab same ho toh 0.5."""
+    """Scale values to 0-1. If all values are equal, return 0.5."""
     rng = s.max() - s.min()
     if rng == 0:
         return pd.Series(0.5, index=s.index)
@@ -23,7 +23,7 @@ def _minmax(s: pd.Series) -> pd.Series:
 def rank_products(df: pd.DataFrame, query: str,
                   weights: dict = WEIGHTS,
                   min_similarity: float = 0.05) -> pd.DataFrame:
-    """Similarity jodta hai, irrelevant products hatata hai, score nikalke sort karta hai."""
+    """Add similarity, drop irrelevant products, compute the score and sort."""
     df = add_similarity(df, query)
     df = df[df["similarity"] >= min_similarity].copy()
     if df.empty:
@@ -31,8 +31,8 @@ def rank_products(df: pd.DataFrame, query: str,
 
     df["sim_n"] = _minmax(df["similarity"])
     df["rating_n"] = (df["rating"] / 5).clip(0, 1)
-    df["reviews_n"] = _minmax(np.log1p(df["reviews"]))   # log, taaki bade numbers dominate na karein
-    df["price_n"] = 1 - _minmax(df["price"])             # sasta = zyada score
+    df["reviews_n"] = _minmax(np.log1p(df["reviews"]))   # log, so huge counts do not dominate
+    df["price_n"] = 1 - _minmax(df["price"])             # cheaper = higher score
 
     df["score"] = (
         weights["similarity"] * df["sim_n"]

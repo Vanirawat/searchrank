@@ -1,5 +1,5 @@
 """
-ml_ranking.py - RandomForest ranking model, aur weighted score se comparison.
+ml_ranking.py - RandomForest ranking model and comparison with the weighted score.
 """
 import sys
 
@@ -22,7 +22,7 @@ def _model():
 
 
 def evaluate(df: pd.DataFrame) -> None:
-    """Poori query ko test mein rakhke check karta hai (naye queries par kitna chalta hai)."""
+    """Hold out whole queries for testing (how well does it work on unseen queries?)."""
     gkf = GroupKFold(n_splits=min(4, df["query"].nunique()))
     rf_corr, base_corr = [], []
 
@@ -35,7 +35,7 @@ def evaluate(df: pd.DataFrame) -> None:
                 rf_corr.append(spearmanr(g["pred"], g["label"])[0])
                 base_corr.append(spearmanr(g["score"], g["label"])[0])
 
-    print("Ranking quality (Spearman, 1 = tumhari labeling se perfect match):")
+    print("Ranking quality (Spearman correlation with manual labels, 1 = perfect match):")
     print(f"  Weighted score : {pd.Series(base_corr).mean():.3f}")
     print(f"  RandomForest   : {pd.Series(rf_corr).mean():.3f}")
 
@@ -57,7 +57,7 @@ def train() -> None:
 
 
 def rank_products_ml(df: pd.DataFrame, query: str) -> pd.DataFrame:
-    """Weighted ranking ki jagah ML model se rank karta hai."""
+    """Rank with the ML model instead of the weighted formula."""
     model = joblib.load(MODEL_PATH)
     r = rank_products(df, query)
     if r.empty:

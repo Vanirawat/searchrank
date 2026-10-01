@@ -1,5 +1,5 @@
 """
-db.py - Clean products ko SQLite database mein save/load karna.
+db.py - Save and load clean products in a SQLite database.
 """
 import sqlite3
 from pathlib import Path
@@ -29,25 +29,27 @@ def load_products(query: str | None = None, table: str = "products") -> pd.DataF
     finally:
         conn.close()
 
+
 def upsert_query(df: pd.DataFrame, query: str, table: str = "products") -> None:
-    """Ek query ke rows replace karta hai, baaki table ko chhedta nahi."""
+    """Replace the rows of one query without touching the rest of the table."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     try:
         try:
             conn.execute(f"DELETE FROM {table} WHERE query = ?", (query,))
         except sqlite3.OperationalError:
-            pass  # table abhi bani hi nahi
+            pass  # table does not exist yet
         df.to_sql(table, conn, if_exists="append", index=False)
         conn.commit()
     finally:
         conn.close()
 
+
 if __name__ == "__main__":
     df = pd.read_csv(CLEAN_CSV)
     save_products(df)
-    print(f"{len(df)} products database mein save hue: {DB_PATH}")
+    print(f"Saved {len(df)} products to database: {DB_PATH}")
 
     check = load_products()
-    print(f"Database se wapas padhe: {len(check)} rows")
+    print(f"Read back from database: {len(check)} rows")
     print(check.groupby("query").size())
