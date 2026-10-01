@@ -29,6 +29,19 @@ def load_products(query: str | None = None, table: str = "products") -> pd.DataF
     finally:
         conn.close()
 
+def upsert_query(df: pd.DataFrame, query: str, table: str = "products") -> None:
+    """Ek query ke rows replace karta hai, baaki table ko chhedta nahi."""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        try:
+            conn.execute(f"DELETE FROM {table} WHERE query = ?", (query,))
+        except sqlite3.OperationalError:
+            pass  # table abhi bani hi nahi
+        df.to_sql(table, conn, if_exists="append", index=False)
+        conn.commit()
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
     df = pd.read_csv(CLEAN_CSV)
